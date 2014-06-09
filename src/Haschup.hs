@@ -1,20 +1,27 @@
 -- | Main module
 module Main where
 
-import qualified Data.ByteString as BS
+import Network.HTTP.Conduit
+import System.Environment (getArgs)
 import qualified Data.Text as T
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as L
+import Control.Monad.IO.Class (liftIO)
 import Text.Playlist
-
--- | Reads playlist from stdin
-readPlaylist :: Format -> IO Playlist
-readPlaylist fmt = do
-    content <- BS.getContents
-    case parsePlaylist fmt content of
-        Left err -> fail $ "failed to parse playlist on stdin: " ++ err
-        Right x  -> return x
 
 -- | Application entry point
 main :: IO ()
 main = do
-    playlist <- readPlaylist M3U
-    mapM_ (putStrLn . T.unpack . trackURL) playlist
+    args <- getArgs
+    case args of
+        [urlString] ->
+            case parseUrl urlString of
+                Nothing -> putStrLn "Sorry, invalid URL"
+                Just req -> withManager $ \manager -> do
+                    res <- httpLbs req manager
+                    let body = responseBody res
+                    let playlist = parsePlaylist M3U $ L.toStrict body
+                    case playlist of
+                        Left err -> fail $ "failed to parse playlist on stdin: " ++ err
+                        Right x  -> liftIO $ putStr $ unlines $ map (T.unpack . trackURL) x
+        _ -> putStrLn "Sorry, please provide exactly one URL"
