@@ -8,10 +8,10 @@ import Text.Playlist
 -- | Reads playlist from stdin
 readPlaylist :: Format -> IO Playlist
 readPlaylist fmt = do
-  content <- BS.getContents
-  case parsePlaylist fmt content of
-    Left err -> fail $ "failed to parse playlist on stdin: " ++ err
-    Right x  -> return x
+    content <- BS.getContents
+    case parsePlaylist fmt content of
+        Left err -> fail $ "failed to parse playlist on stdin: " ++ err
+        Right x  -> return x
 
 -- | Application entry point
 main :: IO ()
